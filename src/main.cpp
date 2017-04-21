@@ -34,10 +34,14 @@
 int main(int argc, char* argv[]) {
     std::cout << "Dummy main routine." << std::endl;
 
-    lp::Matrix m(3,3);
-    m = 1,2,3,4,5,6,7,8,9;
-    lp::Vector v(3);
-    v = 999, 888, 777;
-    lp::solver::simplex::SimplexSolver solver(m, v, v);
+    lp::Matrix m(3,2);
+    m = 1, 2, 1, 1, 3, 2; 
+    lp::Vector b(3);
+    b = 16, 9, 24;
+    lp::Vector c(2);
+    c = 40, 30;
+    lp::solver::simplex::SimplexSolver solver(m, b, c);
+    lp::Vector& sol = solver.Solve();
+    std::cout << sol << "endl";
     return 0;
 }

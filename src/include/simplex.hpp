@@ -34,22 +34,46 @@ namespace simplex {
 
 class SimplexSolver : public Solver {
    public:
-    Matrix _A;
-    Vector _b;
-    Vector _c;
+    Matrix _tableau;
+    Vector _x;
 
     SimplexSolver(Matrix& A, Vector& b, Vector& c);
     ~SimplexSolver() override;
 
+    /*
+     * Solves a linear program specified by the tableau, using the simplex
+     * method.
+     */
     Vector& Solve() override;
 
    private:
     /*
-     * Sets up instance variables _A, _b, _c so that it corresponds to the
-     * linear program: minimize c^Tx subject to Ax >= b, but in standard form,
-     * namely, we add slack variables and use equalities Ax = b.
+     * Builds the simplex tableau, which is where we do all operations to solve
+     * the linear program.
      */
-    void GetStandardForm(const Matrix& A, const Vector& b, const Vector& c);
+    void BuildTableau(const Matrix& A, const Vector& b, const Vector& c);
+
+    /*
+     * Tests whether a given column is basic.
+     */
+    int IsBasicCol(int col);
+
+    /*
+     * Returns true when we are at an optimum.
+     */
+    bool Done();
+
+    /*
+     * Perform Gaussian elimination about an element (row, col) given in the
+     * pair.
+     */
+    void PivotAbout(const std::pair<int, int>& pivot);
+
+    /*
+     * Finds a pivot element. Currently uses Bland's Rule. Must allow new types
+     * of pivotting rules.
+     */
+    std::pair<Vector::IndexType, Vector::IndexType> FindPivot();
 };
 
 }  // namespace simplex

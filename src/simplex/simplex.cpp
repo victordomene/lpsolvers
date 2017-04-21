@@ -26,6 +26,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cassert>
+#include <limits>
 #include "simplex.hpp"
 
 namespace lp {
@@ -33,53 +35,146 @@ namespace solver {
 namespace simplex {
 
 SimplexSolver::SimplexSolver(Matrix& A, Vector& b, Vector& c)
-    : _A(A.numRows(), A.numCols() * 2), _b(b.length() * 2), _c(c.length() * 2) {
+    : _x(c.length()), _tableau(A.numRows() + 1, A.numCols() + A.numRows() + 2) {
     GetStandardForm(A, b, c);
 }
 
 SimplexSolver::~SimplexSolver() {}
 
-Vector& SimplexSolver::Solve() {
-    /*
-     * FIXME: Replace this with something that like, actually solves it.
-     */
+std::pair<Vector::IndexType, Vector::IndexType> SimplexSolver::FindPivot() {
+    int pivot_col = -1;
+    int pivot_row = -1;
 
-    /*
-     * Pseudo-code idea:
-     *   - Find an initial vertex;
-     *   - Find whatever basis corresponds to it (should be != 0 entries);
-     *   - Rewrite the LP using A_B, x_B, A_N, x_N;
-     *   - If the reduced cost vector is >= 0, we are at OPT;
-     *   - Otherwise, for whatever component j  of the reduced cost vector is
-     *     < 0, increment x_j while maintaining feasibility;
-     *   - Recall that by changing x_j, we change x_N, which changes x_B
-     *     implicitly through the relation on the constraint;
-     *   - Pivotting rule: kickout everyone who became 0, and add x_j in.
-     *   - Need to handle all the crappy conditions
-     */
-    Vector* a = new Vector(1);
-    return *a;
+    double min = std::numeric_limits<double>::max();
+    for (int i = _tableau.firstCol() + 1; i <= _tableau.lastCol() - 1; ++i) {
+        double current = _tableau(_tableau.firstRow(), i);
+        if (current <= min) {
+            min = current;
+            pivot_col = i;
+        }
+    }
+    assert(pivot_col >= 0);
+
+    min = std::numeric_limits<double>::max();
+    for (int i = _tableau.firstRow() + 1; i <= _tableau.lastRow(); ++i) {
+        double denom = _tableau(i, pivot_col);
+        if (denom == 0) {
+            continue;
+        }
+
+        double current = _tableau(i, _tableau.lastCol()) / denom;
+        if (current < min && current >= 0) {
+            min = current;
+            pivot_row = i;
+        }
+    }
+    if (pivot_row < 0) {
+        throw UnboundedLinearProgram();
+    }
+
+    std::cout << "Pivot row, col: " << pivot_row << ", " << pivot_col << std::endl;
+    return std::pair<int, int>(pivot_row, pivot_col);
+}
+
+void SimplexSolver::PivotAbout(const std::pair<int, int>& pivot) {
+    Underscore _;
+    Matrix::View pivot_row = _tableau(_(pivot.first, pivot.first), _);
+    pivot_row = pivot_row * 1 / _tableau(pivot.first, pivot.second);
+
+    for (int i = _tableau.firstRow(); i <= _tableau.lastRow(); ++i) {
+        if (i == pivot.first) {
+            continue;
+        }
+
+        Matrix::View current = _tableau(_(i, i), _);
+        current = current - pivot_row * _tableau(i, pivot.second);
+    }
+
+    std::cout << _tableau;
+}
+
+bool SimplexSolver::Done() {
+    for (int i = _tableau.firstCol() + 1; i <= _tableau.lastCol() - 1; ++i) {
+        if (_tableau(_tableau.firstRow(), i) < 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/*
+ * FIXME: This function is particuarly, uh, ugly.
+ */
+int SimplexSolver::IsBasicCol(int col) {
+    int num_ones = 0;
+    int one_pos = -1;
+    for (int i = _tableau.firstRow(); i <= _tableau.lastRow(); ++i) {
+        double current = _tableau(i, col);
+
+        if (current == 1) {
+            num_ones++;
+            one_pos = i;
+        } else if (current != 0) {
+            return -1;
+        }
+    }
+
+    if (num_ones == 1) {
+        return one_pos;
+    }
+    return -1;
+}
+
+Vector& SimplexSolver::Solve() {
+    while (!Done()) {
+        /* Notice that this may throw. The caller to Solve() must be aware. */
+        std::pair<int, int> pivot = FindPivot();
+        PivotAbout(pivot);
+    }
+
+    int index = _x.firstIndex();
+    for (int i = _tableau.firstCol() + 1; i <= _tableau.firstCol() + _x.lastIndex(); ++i) {
+        int basic_row = IsBasicCol(i);
+        if (basic_row != -1) {
+            _x(index) = _tableau(basic_row, _tableau.lastCol());
+            ++index;
+        }
+    }
+    std::cout << _tableau(_tableau.firstRow(), _tableau.lastCol()) << std::endl;
+    return _x;
 }
 
 void SimplexSolver::GetStandardForm(const Matrix& A, const Vector& b,
                                     const Vector& c) {
-    _A = 1;
-    _b = 0;
-    _c = 0;
+    _x = 0;
+    _tableau = 0;
 
+    /* First column corresponds to the objective value, Z */
+    _tableau(_tableau.firstRow(), _tableau.firstCol()) = 1;
+
+    /* Add in the entries in c to the tableau */
+    for (Vector::IndexType i = c.firstIndex(); i <= c.lastIndex(); ++i) {
+        _tableau(_tableau.firstRow(), i + 1) = -1 * c(i);
+    }
+
+    /* Add in the entries in A to the tableau; they start a column after */
     for (Vector::IndexType i = A.firstRow(); i <= A.lastRow(); ++i) {
         for (Vector::IndexType j = A.firstCol(); j <= A.lastCol(); ++j) {
-            _A(i, j) = A(i, j);
+            _tableau(i + 1, j + 1) = A(i, j);
         }
+
+        /* Add in slack variables */
+        _tableau(i + 1, A.lastCol() + i + 1) = 1;
     }
 
+    /* Add in the entries in b to the tableau */
     for (Vector::IndexType i = b.firstIndex(); i <= b.lastIndex(); ++i) {
-        _b(i) = b(i);
+        _tableau(i + 1, _tableau.lastCol()) = b(i);
     }
 
-    for (Vector::IndexType i = c.firstIndex(); i <= c.lastIndex(); ++i) {
-        _c(i) = c(i);
-    }
+#ifdef DEBUG
+    std::cout << _tableau;
+#endif
 }
 
 }  // namespace simplex

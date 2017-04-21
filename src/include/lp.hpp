@@ -30,16 +30,26 @@
 
 namespace lp {
 
-typedef flens::IndexOptions<int, 0> ZeroBased;
-typedef flens::GeMatrix<flens::FullStorage<double, flens::ColMajor, ZeroBased> >
-    Matrix;
+/*
+ * FIXME: This should be types.hpp.
+ */
+typedef flens::GeMatrix<flens::FullStorage<double, flens::ColMajor> > Matrix;
 typedef flens::DenseVector<flens::Array<double> > Vector;
+typedef flens::Underscore<Matrix::IndexType> Underscore;
+
+class UnboundedLinearProgram : public std::runtime_error {
+   public:
+    UnboundedLinearProgram() : std::runtime_error("Unbounded Linear Program") {}
+};
 
 /*
- * Encodes a Linear Program in the typical form:
+ * Encodes a Linear Program in the form:
  *
- *    mininimize: c^Tx
- *    subject to: Ax >= b, x >= 0
+ *    max: _c^Tx
+ *    subject to: _Ax >= _b
+ *
+ * The constructor that accepts a file assumes it is an MPS format file, and
+ * automatically converts the LP into standard form.
  */
 class LinearProgram {
    public:
@@ -50,8 +60,19 @@ class LinearProgram {
     LinearProgram(int rowsA, int colsA, double** A, double* b, double* c);
     ~LinearProgram();
 
+    /*
+     * Creates a SimplexSolver and runs it.
+     */
     Vector& SimplexSolve();
+
+    /*
+     * Creates an IPMSolver and runs it.
+     */
     Vector& IPMSolve();
+
+    /*
+     * Creates an EllipsoidSolver and runs it.
+     */
     Vector& EllipsoidSolve();
 
    private:
