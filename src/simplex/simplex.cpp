@@ -26,9 +26,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "simplex.hpp"
 #include <cassert>
 #include <limits>
-#include "simplex.hpp"
 
 namespace lp {
 namespace solver {
@@ -36,7 +36,7 @@ namespace simplex {
 
 SimplexSolver::SimplexSolver(Matrix& A, Vector& b, Vector& c)
     : _x(c.length()), _tableau(A.numRows() + 1, A.numCols() + A.numRows() + 2) {
-    GetStandardForm(A, b, c);
+    BuildTableau(A, b, c);
 }
 
 SimplexSolver::~SimplexSolver() {}
@@ -72,7 +72,8 @@ std::pair<Vector::IndexType, Vector::IndexType> SimplexSolver::FindPivot() {
         throw UnboundedLinearProgram();
     }
 
-    std::cout << "Pivot row, col: " << pivot_row << ", " << pivot_col << std::endl;
+    std::cout << "Pivot row, col: " << pivot_row << ", " << pivot_col
+              << std::endl;
     return std::pair<int, int>(pivot_row, pivot_col);
 }
 
@@ -133,7 +134,8 @@ Vector& SimplexSolver::Solve() {
     }
 
     int index = _x.firstIndex();
-    for (int i = _tableau.firstCol() + 1; i <= _tableau.firstCol() + _x.lastIndex(); ++i) {
+    for (int i = _tableau.firstCol() + 1;
+         i <= _tableau.firstCol() + _x.lastIndex(); ++i) {
         int basic_row = IsBasicCol(i);
         if (basic_row != -1) {
             _x(index) = _tableau(basic_row, _tableau.lastCol());
@@ -144,8 +146,8 @@ Vector& SimplexSolver::Solve() {
     return _x;
 }
 
-void SimplexSolver::GetStandardForm(const Matrix& A, const Vector& b,
-                                    const Vector& c) {
+void SimplexSolver::BuildTableau(const Matrix& A, const Vector& b,
+                                 const Vector& c) {
     _x = 0;
     _tableau = 0;
 

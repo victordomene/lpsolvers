@@ -1,4 +1,6 @@
 # Build directories
+Debug
+Release
 build
 proposal
 paper

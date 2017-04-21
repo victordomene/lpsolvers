@@ -34,8 +34,8 @@ namespace simplex {
 
 class SimplexSolver : public Solver {
    public:
-    Matrix _tableau;
     Vector _x;
+    Matrix _tableau;
 
     SimplexSolver(Matrix& A, Vector& b, Vector& c);
     ~SimplexSolver() override;
