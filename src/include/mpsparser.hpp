@@ -26,57 +26,36 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "flens/flens.cxx"
+#include <fstream>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
-namespace lp {
+namespace mps {
 
-/*
- * FIXME: This should be types.hpp.
- */
-typedef flens::GeMatrix<flens::FullStorage<double, flens::ColMajor> > Matrix;
-typedef flens::DenseVector<flens::Array<double> > Vector;
-typedef flens::Underscore<Matrix::IndexType> Underscore;
+enum class ConstraintType { EQ, LE, GE, NONE };
+enum class ParsePhase { NAME, ROWS, COLUMNS, RHS, BOUNDS, NONE };
 
-class UnboundedLinearProgram : public std::runtime_error {
+class MPSParser {
    public:
-    UnboundedLinearProgram() : std::runtime_error("Unbounded Linear Program") {}
-};
+    MPSParser(std::string& filename);
+    ~MPSParser() {}
 
-/*
- * Encodes a Linear Program in the form:
- *
- *    max: _c^Tx
- *    subject to: _Ax >= _b
- *
- * The constructor that accepts a file assumes it is an MPS format file, and
- * automatically converts the LP into standard form.
- */
-class LinearProgram {
-   public:
-    Matrix _A;
-    Vector _b;
-    Vector _c;
-
-    LinearProgram(int rowsA, int colsA, double** A, double* b, double* c);
-    LinearProgram(std::string mpsfile);
-    ~LinearProgram();
-
-    /*
-     * Creates a SimplexSolver and runs it.
-     */
-    Vector& SimplexSolve();
-
-    /*
-     * Creates an IPMSolver and runs it.
-     */
-    Vector& IPMSolve();
-
-    /*
-     * Creates an EllipsoidSolver and runs it.
-     */
-    Vector& EllipsoidSolve();
+    /* FIXME: Add setters/getters */
 
    private:
+    std::unordered_map<std::string, std::pair<ConstraintType, int> >
+        _constr_meta;
+    std::unordered_map<std::string, int> _var_meta;
+    std::vector<std::vector<double> > _A;
+    std::vector<double> _rhs;
+    std::string _name;
+    std::ifstream _f;
+    std::string _filename;
+
+    std::unique_ptr<std::vector<std::string> >TokenizeLine(std::string& line);
+    void ParseMeta();
+    void ParseLP();
 };
 
-}  // namespace simplex
+}  // namespace lp

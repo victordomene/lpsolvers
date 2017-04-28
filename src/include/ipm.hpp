@@ -26,57 +26,34 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "flens/flens.cxx"
+#include "solver.hpp"
 
 namespace lp {
+namespace solver {
+namespace ipm {
 
-/*
- * FIXME: This should be types.hpp.
- */
-typedef flens::GeMatrix<flens::FullStorage<double, flens::ColMajor> > Matrix;
-typedef flens::DenseVector<flens::Array<double> > Vector;
-typedef flens::Underscore<Matrix::IndexType> Underscore;
-
-class UnboundedLinearProgram : public std::runtime_error {
+class IPMSolver : public Solver {
    public:
-    UnboundedLinearProgram() : std::runtime_error("Unbounded Linear Program") {}
-};
+    Vector _x;
 
-/*
- * Encodes a Linear Program in the form:
- *
- *    max: _c^Tx
- *    subject to: _Ax >= _b
- *
- * The constructor that accepts a file assumes it is an MPS format file, and
- * automatically converts the LP into standard form.
- */
-class LinearProgram {
-   public:
+    /* Matrix of constraints */
     Matrix _A;
-    Vector _b;
-    Vector _c;
 
-    LinearProgram(int rowsA, int colsA, double** A, double* b, double* c);
-    LinearProgram(std::string mpsfile);
-    ~LinearProgram();
+    /* Matrix of slacks */
+    Matrix _S;
 
-    /*
-     * Creates a SimplexSolver and runs it.
-     */
-    Vector& SimplexSolve();
+    IPM(Matrix& A, Vector& b, Vector& c);
+    ~IPM() override;
 
     /*
-     * Creates an IPMSolver and runs it.
+     * Solves a linear program specified by the tableau, using the simplex
+     * method.
      */
-    Vector& IPMSolve();
-
-    /*
-     * Creates an EllipsoidSolver and runs it.
-     */
-    Vector& EllipsoidSolve();
+    Vector& Solve() override;
 
    private:
 };
 
-}  // namespace simplex
+}  // namespace ipm
+}  // namespace solver
+}  // namespace lp

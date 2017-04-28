@@ -26,6 +26,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+// FIXME: Fix precision problems...
+
 #include "simplex.hpp"
 #include <cassert>
 #include <limits>

@@ -14,8 +14,7 @@ TODO.
 
 ## TODO
 
-- Read in MPS-format files to be able to use netlib's LP data sets.
-- Conversion between MPS-format -> Ax >= b style LPs.
+- Fix equalities in MPS parser.
 - Add new Pivot Rules in Simplex.
 - Support IPM and Ellipsoid.
 - Actually run benchmarks?!

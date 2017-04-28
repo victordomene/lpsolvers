@@ -26,57 +26,39 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "flens/flens.cxx"
+#include "ipm.hpp"
+#include <cassert>
+#include <limits>
 
 namespace lp {
+namespace solver {
+namespace ipm {
 
-/*
- * FIXME: This should be types.hpp.
- */
-typedef flens::GeMatrix<flens::FullStorage<double, flens::ColMajor> > Matrix;
-typedef flens::DenseVector<flens::Array<double> > Vector;
-typedef flens::Underscore<Matrix::IndexType> Underscore;
+IPMSolver::IPMSolver(Matrix& A, Vector& b, Vector& c)
+    : _x(c.length()), _A(A), _S(c.length(), c.length()) {}
 
-class UnboundedLinearProgram : public std::runtime_error {
-   public:
-    UnboundedLinearProgram() : std::runtime_error("Unbounded Linear Program") {}
-};
+IPMSolver::~IPMSolver() {}
 
-/*
- * Encodes a Linear Program in the form:
- *
- *    max: _c^Tx
- *    subject to: _Ax >= _b
- *
- * The constructor that accepts a file assumes it is an MPS format file, and
- * automatically converts the LP into standard form.
- */
-class LinearProgram {
-   public:
-    Matrix _A;
-    Vector _b;
-    Vector _c;
+Vector& IPMSolver::Solve() {
+    while (!Done()) {
+        /* Notice that this may throw. The caller to Solve() must be aware. */
+        std::pair<int, int> pivot = FindPivot();
+        PivotAbout(pivot);
+    }
 
-    LinearProgram(int rowsA, int colsA, double** A, double* b, double* c);
-    LinearProgram(std::string mpsfile);
-    ~LinearProgram();
+    int index = _x.firstIndex();
+    for (int i = _tableau.firstCol() + 1;
+         i <= _tableau.firstCol() + _x.lastIndex(); ++i) {
+        int basic_row = IsBasicCol(i);
+        if (basic_row != -1) {
+            _x(index) = _tableau(basic_row, _tableau.lastCol());
+            ++index;
+        }
+    }
+    std::cout << _tableau(_tableau.firstRow(), _tableau.lastCol()) << std::endl;
+    return _x;
+}
 
-    /*
-     * Creates a SimplexSolver and runs it.
-     */
-    Vector& SimplexSolve();
-
-    /*
-     * Creates an IPMSolver and runs it.
-     */
-    Vector& IPMSolve();
-
-    /*
-     * Creates an EllipsoidSolver and runs it.
-     */
-    Vector& EllipsoidSolve();
-
-   private:
-};
-
-}  // namespace simplex
+}  // namespace ipm
+}  // namespace solver
+}  // namespace lp
