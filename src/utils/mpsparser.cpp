@@ -122,8 +122,9 @@ void MPSParser::ParseLP() {
                            type == ConstraintType::NONE) {
                     _A[row][col] = value;
                 } else {
-                    std::cout << "Not supporting EQ yet." << std::endl;
-                    exit(1);
+                    _A[row][col] = value;
+                    row = _constr_meta[constr_name + "LE"].second;
+                    _A[row][col] = -1 * value;
                 }
 
                 if (tokens.size() == 5) {
@@ -139,8 +140,9 @@ void MPSParser::ParseLP() {
                                type == ConstraintType::NONE) {
                         _A[row][col] = value;
                     } else {
-                        std::cout << "Not supporting EQ yet." << std::endl;
-                        exit(1);
+                        _rhs[row] = 1.0 * value;
+                        row = _constr_meta[constr_name + "LE"].second;
+                        _rhs[row] = -1.0 * value;
                     }
                 }
                 break;
@@ -159,8 +161,9 @@ void MPSParser::ParseLP() {
                            type == ConstraintType::NONE) {
                     _rhs[row] = value;
                 } else {
-                    std::cout << "Not supporting EQ yet." << std::endl;
-                    exit(1);
+                    _rhs[row] = value;
+                    row = _constr_meta[constr_name + "LE"].second;
+                    _rhs[row] = -1.0 * value;
                 }
 
                 if (tokens.size() == 5) {
@@ -174,8 +177,9 @@ void MPSParser::ParseLP() {
                                type == ConstraintType::NONE) {
                         _rhs[row] = value;
                     } else {
-                        std::cout << "Not supporting EQ yet." << std::endl;
-                        exit(1);
+                        _rhs[row] = value;
+                        row = _constr_meta[constr_name + "LE"].second;
+                        _rhs[row] = -1.0 * value;
                     }
                 }
                 break;
@@ -198,8 +202,11 @@ void MPSParser::ParseLP() {
                     _A[row][col] = 1.0;
                     _rhs[row] = value;
                 } else {
-                    std::cout << "Not supporting EQ yet." << std::endl;
-                    exit(1);
+                    _A[row][col] = 1.0;
+                    _rhs[row] = value;
+                    row = _constr_meta[constr_name + "LE"].second;
+                    _A[row][col] = -1.0;
+                    _rhs[row] = -1.0 * value;
                 }
                 break;
             }
@@ -264,6 +271,10 @@ void MPSParser::ParseMeta() {
                 ConstraintType type;
                 if (tokens[0] == "E") {
                     type = ConstraintType::EQ;
+
+                    int id = _constr_meta.size();
+                    _constr_meta[tokens[1] + "LE"] =
+                        std::pair<ConstraintType, int>(type, id);
                 } else if (tokens[0] == "L") {
                     type = ConstraintType::LE;
                 } else if (tokens[0] == "G") {
@@ -290,6 +301,10 @@ void MPSParser::ParseMeta() {
                     type = ConstraintType::GE;
                 } else if (tokens[0] == "FX") {
                     type = ConstraintType::EQ;
+
+                    int id = _constr_meta.size();
+                    _constr_meta["BOUNDCONSTRAINT" + tokens[0] + tokens[2] + "LE"] =
+                        std::pair<ConstraintType, int>(type, id);
                 } else if (tokens[0] == "FR") {
                     std::cout << "Unsupported FR bounds!" << std::endl;
                     exit(1);
@@ -329,6 +344,15 @@ MPSParser::MPSParser(std::string& filename) : _filename(filename) {
     _rhs = std::vector<double>(_constr_meta.size(), 0);
 
     ParseLP();
+
+#ifdef DEBUG
+    for (const auto& row : _A) {
+        for (const auto& x : row) {
+            std::cout << x << ", ";
+        }
+        std::cout << std::endl;
+    }
+#endif
 }
 
 }  // namespace mps

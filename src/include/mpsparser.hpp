@@ -31,6 +31,7 @@
 #include <unordered_map>
 #include <vector>
 
+namespace lp {
 namespace mps {
 
 enum class ConstraintType { EQ, LE, GE, NONE };
@@ -58,4 +59,5 @@ class MPSParser {
     void ParseLP();
 };
 
+}  // namespace mps
 }  // namespace lp

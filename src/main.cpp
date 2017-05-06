@@ -29,11 +29,14 @@
 #include <iostream>
 
 #include "flens/flens.cxx"
+#include "mpsparser.hpp"
 #include "simplex.hpp"
 
 int main(int argc, char* argv[]) {
     std::cout << "Dummy main routine." << std::endl;
-
+    std::string filename = "../tests/AFIRO.MPS";
+    lp::mps::MPSParser parser(filename);
+    return 0;
     lp::Matrix m(3,2);
     m = 1, 2, 1, 1, 3, 2; 
     lp::Vector b(3);
