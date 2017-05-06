@@ -3,7 +3,7 @@ project (LPSolvers)
 
 include_directories (include)
 include_directories (flens)
-set (SOURCES main.cpp simplex/simplex.cpp utils/mpsparser.cpp)
+set (SOURCES main.cpp simplex/simplex.cpp utils/mpsparser.cpp utils/utils.cpp)
 set (CMAKE_CXX_FLAGS_DEBUG "-std=c++14 -ggdb -O0 -DDEBUG")
 set (CMAKE_CXX_FLAGS_RELEASE "-std=c++11 -O3")
 

@@ -1,3 +1,6 @@
+#ifndef _INCLUDE_MPSPARSER_HPP_
+#define _INCLUDE_MPSPARSER_HPP_
+
 /*
  * Copyright (c) 2017, Victor Domene
  *
@@ -54,10 +57,12 @@ class MPSParser {
     std::ifstream _f;
     std::string _filename;
 
-    std::unique_ptr<std::vector<std::string> >TokenizeLine(std::string& line);
+    std::unique_ptr<std::vector<std::string> > TokenizeLine(std::string& line);
     void ParseMeta();
     void ParseLP();
 };
 
 }  // namespace mps
 }  // namespace lp
+
+#endif  // _INCLUDE_MPSPARSER_HPP_

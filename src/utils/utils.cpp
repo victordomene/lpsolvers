@@ -1,6 +1,3 @@
-#ifndef _INCLUDE_SOLVER_HPP_
-#define _INCLUDE_SOLVER_HPP_
-
 /*
  * Copyright (c) 2017, Victor Domene
  *
@@ -29,21 +26,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "lp.hpp"
+#include <cassert>
+#include <cmath>
 
-namespace lp {
-namespace solver {
+#include "utils.hpp"
 
-/*
- * Virtual class for a LinearProgram solver.
- */
-class Solver {
-   public:
-    virtual ~Solver(){};
-    virtual Vector& Solve() = 0;
-};
+namespace utils {
 
-}  // namespace solver
-}  // namespace lp
+bool within(double a, double b) {
+    return std::abs(a - b) < precision_;
+}
 
-#endif  // _INCLUDE_SOLVER_HPP_
+}  // namespace utils

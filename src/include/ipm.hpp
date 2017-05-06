@@ -1,3 +1,6 @@
+#ifndef _INCLUDE_IPM_HPP_
+#define _INCLUDE_IPM_HPP_
+
 /*
  * Copyright (c) 2017, Victor Domene
  *
@@ -57,3 +60,5 @@ class IPMSolver : public Solver {
 }  // namespace ipm
 }  // namespace solver
 }  // namespace lp
+
+#endif  // _INCLUDE_IPM_HPP_

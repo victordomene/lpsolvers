@@ -28,9 +28,11 @@
 
 // FIXME: Fix precision problems...
 
-#include "simplex.hpp"
 #include <cassert>
 #include <limits>
+
+#include "simplex.hpp"
+#include "utils.hpp"
 
 namespace lp {
 namespace solver {
@@ -60,7 +62,7 @@ std::pair<Vector::IndexType, Vector::IndexType> SimplexSolver::FindPivot() {
     min = std::numeric_limits<double>::max();
     for (int i = _tableau.firstRow() + 1; i <= _tableau.lastRow(); ++i) {
         double denom = _tableau(i, pivot_col);
-        if (denom == 0) {
+        if (utils::within(denom, 0.0)) {
             continue;
         }
 
@@ -114,10 +116,10 @@ int SimplexSolver::IsBasicCol(int col) {
     for (int i = _tableau.firstRow(); i <= _tableau.lastRow(); ++i) {
         double current = _tableau(i, col);
 
-        if (current == 1) {
+        if (utils::within(current, 1.0)) {
             num_ones++;
             one_pos = i;
-        } else if (current != 0) {
+        } else if (utils::within(current, 0.0)) {
             return -1;
         }
     }

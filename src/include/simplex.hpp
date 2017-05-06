@@ -1,3 +1,6 @@
+#ifndef _INCLUDE_SIMPLEX_HPP_
+#define _INCLUDE_SIMPLEX_HPP_
+
 /*
  * Copyright (c) 2017, Victor Domene
  *
@@ -79,3 +82,5 @@ class SimplexSolver : public Solver {
 }  // namespace simplex
 }  // namespace solver
 }  // namespace lp
+
+#endif  // _INCLUDE_SIMPLEX_HPP_

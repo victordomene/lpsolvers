@@ -1,3 +1,6 @@
+#ifndef _INCLUDE_LP_HPP_
+#define _INCLUDE_LP_HPP_
+
 /*
  * Copyright (c) 2017, Victor Domene
  *
@@ -80,3 +83,5 @@ class LinearProgram {
 };
 
 }  // namespace simplex
+
+#endif  // _INCLUDE_LP_HPP_
