@@ -29,22 +29,24 @@
 #include <iostream>
 
 #include "flens/flens.cxx"
-#include "mpsparser.hpp"
-#include "simplex.hpp"
+#include "lp.hpp"
 
 int main(int argc, char* argv[]) {
     std::cout << "Dummy main routine." << std::endl;
-    std::string filename = "../tests/AFIRO.MPS";
-    lp::mps::MPSParser parser(filename);
+    std::string filename = argv[1];
+
+    lp::LinearProgram lp(filename);
+    lp::Vector x = lp.SimplexSolve();
+    std::cout << x << std::endl;
     return 0;
-    lp::Matrix m(3,2);
-    m = 1, 2, 1, 1, 3, 2; 
-    lp::Vector b(3);
-    b = 16, 9, 24;
-    lp::Vector c(2);
-    c = 40, 30;
-    lp::solver::simplex::SimplexSolver solver(m, b, c);
-    lp::Vector& sol = solver.Solve();
-    std::cout << sol << "endl";
-    return 0;
+    //lp::Matrix m(3,2);
+    //m = 1, 2, 1, 1, 3, 2;
+    //lp::Vector b(3);
+    //b = 16, 9, 24;
+    //lp::Vector c(2);
+    //c = 40, 30;
+    //lp::solver::simplex::SimplexSolver solver(m, b, c, lp::solver::simplex::PivottingRules::FIRST);
+    //lp::Vector& sol = solver.Solve();
+    //std::cout << sol << "endl";
+    //return 0;
 }

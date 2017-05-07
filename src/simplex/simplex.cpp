@@ -26,10 +26,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-// FIXME: Fix precision problems...
-
 #include <cassert>
 #include <limits>
+#include <random>
 
 #include "simplex.hpp"
 #include "utils.hpp"
@@ -38,8 +37,11 @@ namespace lp {
 namespace solver {
 namespace simplex {
 
-SimplexSolver::SimplexSolver(Matrix& A, Vector& b, Vector& c)
-    : _x(c.length()), _tableau(A.numRows() + 1, A.numCols() + A.numRows() + 2) {
+SimplexSolver::SimplexSolver(Matrix& A, Vector& b, Vector& c,
+                             PivottingRules rule)
+    : _x(c.length()),
+      _tableau(A.numRows() + 1, A.numCols() + A.numRows() + 2),
+      _rule(rule) {
     BuildTableau(A, b, c);
 }
 
@@ -50,32 +52,71 @@ std::pair<Vector::IndexType, Vector::IndexType> SimplexSolver::FindPivot() {
     int pivot_row = -1;
 
     double min = std::numeric_limits<double>::max();
-    for (int i = _tableau.firstCol() + 1; i <= _tableau.lastCol() - 1; ++i) {
-        double current = _tableau(_tableau.firstRow(), i);
-        if (current <= min) {
-            min = current;
-            pivot_col = i;
+
+    switch (_rule) {
+        case PivottingRules::BLAND: {
+            for (int i = _tableau.firstCol() + 1; i <= _tableau.lastCol() - 1;
+                 ++i) {
+                double current = _tableau(_tableau.firstRow(), i);
+                if (current <= min) {
+                    min = current;
+                    pivot_col = i;
+                }
+            }
+            break;
+        }
+        case PivottingRules::RANDOM: {
+            std::random_device rng;
+            std::uniform_int_distribution<std::random_device::result_type> dist(
+                _tableau.firstRow() + 1, _tableau.lastRow());
+
+            pivot_col = dist(rng);
+            break;
+        }
+        case PivottingRules::FIRST: {
+            for (int i = _tableau.firstCol() + 1; i <= _tableau.lastCol() - 1;
+                 ++i) {
+                double current = _tableau(_tableau.firstRow(), i);
+                if (current < 0.0) {
+                    min = current;
+                    pivot_col = i;
+                    break;
+                }
+            }
+            break;
+        }
+        case PivottingRules::DEVEX: {
+            pivot_col = _tableau.firstRow() + 1;
+            break;
         }
     }
     assert(pivot_col >= 0);
 
+    /*
+     * Implements different pivotting rules.
+     */
     min = std::numeric_limits<double>::max();
     for (int i = _tableau.firstRow() + 1; i <= _tableau.lastRow(); ++i) {
+        std::cout << "LALALLA" << i << "; " << _tableau.lastCol() << "; " << std::endl;
         double denom = _tableau(i, pivot_col);
-        if (utils::within(denom, 0.0)) {
+        if (denom == 0.0) {
             continue;
         }
 
         double current = _tableau(i, _tableau.lastCol()) / denom;
-        if (current < min && current >= 0) {
+        std::cout << i << "; " << _tableau.lastCol() << "; " << current << std::endl;
+        if (current >= 0.0 && min > current) {
             min = current;
             pivot_row = i;
         }
     }
+
     if (pivot_row < 0) {
+        std::cout << _tableau << std::endl;
         throw UnboundedLinearProgram();
     }
 
+    std::cout << _tableau << std::endl;
     std::cout << "Pivot row, col: " << pivot_row << ", " << pivot_col
               << std::endl;
     return std::pair<int, int>(pivot_row, pivot_col);
@@ -95,7 +136,7 @@ void SimplexSolver::PivotAbout(const std::pair<int, int>& pivot) {
         current = current - pivot_row * _tableau(i, pivot.second);
     }
 
-    std::cout << _tableau;
+    //std::cout << _tableau;
 }
 
 bool SimplexSolver::Done() {
@@ -104,6 +145,7 @@ bool SimplexSolver::Done() {
             return false;
         }
     }
+    std::cout << _tableau << std::endl;
     return true;
 }
 
@@ -146,7 +188,7 @@ Vector& SimplexSolver::Solve() {
             ++index;
         }
     }
-    std::cout << _tableau(_tableau.firstRow(), _tableau.lastCol()) << std::endl;
+    //std::cout << _tableau(_tableau.firstRow(), _tableau.lastCol()) << std::endl;
     return _x;
 }
 
@@ -169,11 +211,16 @@ void SimplexSolver::BuildTableau(const Matrix& A, const Vector& b,
             _tableau(i + 1, j + 1) = A(i, j);
         }
 
-        /* Add in slack variables */
-        _tableau(i + 1, A.lastCol() + i + 1) = 1;
+        /*
+         * Add in slack variables. The initial solution will be basically
+         * x_i = 0, and the slack variables equal to the right hand side of
+         * that particular constraint. So, since all equations were converted
+         * in the MPS to Ax >= b, the slacks have -1 coefficients.
+         */
+        _tableau(i + 1, A.lastCol() + i + 1) = -1;
     }
 
-    /* Add in the entries in b to the tableau */
+    /* add in the entries in b to the tableau */
     for (Vector::IndexType i = b.firstIndex(); i <= b.lastIndex(); ++i) {
         _tableau(i + 1, _tableau.lastCol()) = b(i);
     }

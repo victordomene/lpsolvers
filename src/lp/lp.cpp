@@ -1,6 +1,3 @@
-#ifndef _INCLUDE_MPSPARSER_HPP_
-#define _INCLUDE_MPSPARSER_HPP_
-
 /*
  * Copyright (c) 2017, Victor Domene
  *
@@ -29,47 +26,40 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <fstream>
-#include <string>
-#include <unordered_map>
-#include <vector>
-
-#include "lp.hpp"
+#include "flens/flens.cxx"
+#include "mpsparser.hpp"
+#include "simplex.hpp"
 
 namespace lp {
-namespace mps {
 
-enum class ConstraintType { EQ, LE, GE, NONE };
-enum class ParsePhase { NAME, ROWS, COLUMNS, RHS, BOUNDS, NONE };
+LinearProgram::LinearProgram(int rowsA, int colsA, double** A, double* b,
+                             double* c)
+    : _A(rowsA, colsA), _b(rowsA), _c(rowsA) {}
 
-class MPSParser {
-   public:
-    MPSParser(std::string& filename);
-    ~MPSParser() {}
+LinearProgram::LinearProgram(std::string mpsfile) {
+    mps::MPSParser parser(mpsfile);
+    _A = parser.GetA();
+    _b = parser.GetB();
+    _c = parser.GetC();
 
-    /* FIXME: Add setters/getters */
-    Matrix GetA();
-    Vector GetB();
-    Vector GetC();
+    std::cout << _A << std::endl << std::endl;
+    std::cout << _b << std::endl << std::endl;
+    std::cout << _c << std::endl << std::endl;
+}
 
-   private:
-    int next_id_ = 0;
-    std::unordered_map<std::string, std::pair<ConstraintType, int> >
-        _constr_meta;
-    std::unordered_map<std::string, int> _var_meta;
-    std::vector<std::vector<double> > _A;
-    std::vector<double> _c;
-    std::vector<double> _rhs;
-    std::string _name;
-    std::ifstream _f;
-    std::string _filename;
+Vector LinearProgram::SimplexSolve() {
+    solver::simplex::SimplexSolver solver(_A, _b, _c, solver::simplex::PivottingRules::BLAND);
+    return solver.Solve();
+}
 
-    std::unique_ptr<std::vector<std::string> > TokenizeLine(std::string& line);
-    void ParseMeta();
-    void ParseLP();
-};
+Vector LinearProgram::IPMSolve() {
+    Vector a(1);
+    return a;
+}
 
-}  // namespace mps
+Vector LinearProgram::EllipsoidSolve() {
+    Vector a(1);
+    return a;
+}
+
 }  // namespace lp
-
-#endif  // _INCLUDE_MPSPARSER_HPP_

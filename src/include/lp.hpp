@@ -63,22 +63,22 @@ class LinearProgram {
 
     LinearProgram(int rowsA, int colsA, double** A, double* b, double* c);
     LinearProgram(std::string mpsfile);
-    ~LinearProgram();
+    ~LinearProgram() {};
 
     /*
      * Creates a SimplexSolver and runs it.
      */
-    Vector& SimplexSolve();
+    Vector SimplexSolve();
 
     /*
      * Creates an IPMSolver and runs it.
      */
-    Vector& IPMSolve();
+    Vector IPMSolve();
 
     /*
      * Creates an EllipsoidSolver and runs it.
      */
-    Vector& EllipsoidSolve();
+    Vector EllipsoidSolve();
 
    private:
 };

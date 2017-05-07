@@ -35,12 +35,16 @@ namespace lp {
 namespace solver {
 namespace simplex {
 
+enum class PivottingRules { DEVEX, FIRST, RANDOM, BLAND };
+
 class SimplexSolver : public Solver {
    public:
     Vector _x;
     Matrix _tableau;
+    PivottingRules _rule;
 
-    SimplexSolver(Matrix& A, Vector& b, Vector& c);
+    SimplexSolver(Matrix& A, Vector& b, Vector& c,
+                  PivottingRules rule = PivottingRules::BLAND);
     ~SimplexSolver() override;
 
     /*

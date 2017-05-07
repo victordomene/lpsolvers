@@ -113,14 +113,21 @@ void MPSParser::ParseLP() {
                 const double value = stod(tokens[2]);
 
                 ConstraintType type = _constr_meta[constr_name].first;
-                int row = _constr_meta[constr_name].second;
+                int row = -1;
                 int col = _var_meta[var_name];
+
+                if (type == ConstraintType::NONE) {
+                    row = -1;
+                } else {
+                    row = _constr_meta[constr_name].second;
+                }
 
                 if (type == ConstraintType::LE) {
                     _A[row][col] = -1 * value;
-                } else if (type == ConstraintType::GE ||
-                           type == ConstraintType::NONE) {
+                } else if (type == ConstraintType::GE) {
                     _A[row][col] = value;
+                } else if (type == ConstraintType::NONE) {
+                    _c[col] = value;
                 } else {
                     _A[row][col] = value;
                     row = _constr_meta[constr_name + "LE"].second;
@@ -132,17 +139,22 @@ void MPSParser::ParseLP() {
                     const double value = stod(tokens[4]);
 
                     type = _constr_meta[constr_name].first;
-                    row = _constr_meta[constr_name].second;
+                    if (type == ConstraintType::NONE) {
+                        row = -1;
+                    } else {
+                        row = _constr_meta[constr_name].second;
+                    }
 
                     if (type == ConstraintType::LE) {
                         _A[row][col] = -1 * value;
-                    } else if (type == ConstraintType::GE ||
-                               type == ConstraintType::NONE) {
+                    } else if (type == ConstraintType::GE) {
                         _A[row][col] = value;
+                    } else if (type == ConstraintType::NONE) {
+                        _c[col] = value;
                     } else {
-                        _rhs[row] = 1.0 * value;
+                        _A[row][col] = 1.0 * value;
                         row = _constr_meta[constr_name + "LE"].second;
-                        _rhs[row] = -1.0 * value;
+                        _A[row][col] = -1.0 * value;
                     }
                 }
                 break;
@@ -153,12 +165,13 @@ void MPSParser::ParseLP() {
                 const double value = stod(tokens[2]);
 
                 ConstraintType type = _constr_meta[constr_name].first;
+                assert(type != ConstraintType::NONE);
+
                 int row = _constr_meta[constr_name].second;
 
                 if (type == ConstraintType::LE) {
                     _rhs[row] = -1 * value;
-                } else if (type == ConstraintType::GE ||
-                           type == ConstraintType::NONE) {
+                } else if (type == ConstraintType::GE) {
                     _rhs[row] = value;
                 } else {
                     _rhs[row] = value;
@@ -169,12 +182,12 @@ void MPSParser::ParseLP() {
                 if (tokens.size() == 5) {
                     const std::string& constr_name = tokens[3];
                     const double value = stod(tokens[4]);
+                    type = _constr_meta[constr_name].first;
                     row = _constr_meta[constr_name].second;
 
                     if (type == ConstraintType::LE) {
                         _rhs[row] = -1 * value;
-                    } else if (type == ConstraintType::GE ||
-                               type == ConstraintType::NONE) {
+                    } else if (type == ConstraintType::GE) {
                         _rhs[row] = value;
                     } else {
                         _rhs[row] = value;
@@ -192,6 +205,7 @@ void MPSParser::ParseLP() {
                 const double value = stod(tokens[3]);
 
                 ConstraintType type = _constr_meta[constr_name].first;
+                assert (type != ConstraintType::NONE);
                 int row = _constr_meta[constr_name].second;
                 int col = _var_meta[var_name];
 
@@ -272,7 +286,8 @@ void MPSParser::ParseMeta() {
                 if (tokens[0] == "E") {
                     type = ConstraintType::EQ;
 
-                    int id = _constr_meta.size();
+                    int id = next_id_;
+                    next_id_++;
                     _constr_meta[tokens[1] + "LE"] =
                         std::pair<ConstraintType, int>(type, id);
                 } else if (tokens[0] == "L") {
@@ -281,13 +296,16 @@ void MPSParser::ParseMeta() {
                     type = ConstraintType::GE;
                 } else if (tokens[0] == "N") {
                     type = ConstraintType::NONE;
+                    /* HACK */
+                    next_id_--;
                 } else {
                     std::cout << "Unrecognized type of ROW. Can't handle..."
                               << std::endl;
                     exit(1);
                 }
 
-                int id = _constr_meta.size();
+                int id = next_id_;
+                next_id_++;
                 _constr_meta[tokens[1]] =
                     std::pair<ConstraintType, int>(type, id);
                 break;
@@ -302,7 +320,8 @@ void MPSParser::ParseMeta() {
                 } else if (tokens[0] == "FX") {
                     type = ConstraintType::EQ;
 
-                    int id = _constr_meta.size();
+                    int id = next_id_;
+                    next_id_++;
                     _constr_meta["BOUNDCONSTRAINT" + tokens[0] + tokens[2] + "LE"] =
                         std::pair<ConstraintType, int>(type, id);
                 } else if (tokens[0] == "FR") {
@@ -310,7 +329,8 @@ void MPSParser::ParseMeta() {
                     exit(1);
                 }
 
-                int id = _constr_meta.size();
+                int id = next_id_;
+                next_id_++;
                 _constr_meta["BOUNDCONSTRAINT" + tokens[0] + tokens[2]] =
                     std::pair<ConstraintType, int>(type, id);
                 break;
@@ -340,19 +360,39 @@ MPSParser::MPSParser(std::string& filename) : _filename(filename) {
     ParseMeta();
 
     std::vector<double> row(_var_meta.size(), 0);
-    _A = std::vector<std::vector<double> >(_constr_meta.size(), row);
-    _rhs = std::vector<double>(_constr_meta.size(), 0);
+    _A = std::vector<std::vector<double> >(_constr_meta.size() - 1, row);
+    _rhs = std::vector<double>(_constr_meta.size() - 1, 0);
+    _c = std::vector<double>(_var_meta.size(), 0);
 
     ParseLP();
+}
 
-#ifdef DEBUG
-    for (const auto& row : _A) {
-        for (const auto& x : row) {
-            std::cout << x << ", ";
+Matrix MPSParser::GetA() {
+    Matrix A(_constr_meta.size() - 1, _var_meta.size());
+    for (int i = 0; i < _A.size(); ++i) {
+        const auto& row = _A[i];
+        for (int j = 0; j < row.size(); ++j) {
+            /* +1 fixes some annoying stuff with flens. */
+            A(i + 1, j + 1) = row[j];
         }
-        std::cout << std::endl;
     }
-#endif
+    return A;
+}
+
+Vector MPSParser::GetB() {
+    Vector B(_constr_meta.size() - 1);
+    for (int i = 0; i < _rhs.size(); ++i) {
+        B(i + 1) = _rhs[i];
+    }
+    return B;
+}
+
+Vector MPSParser::GetC() {
+    Vector C(_var_meta.size());
+    for (int i = 0; i < _c.size(); ++i) {
+        C(i + 1) = _c[i];
+    }
+    return C;
 }
 
 }  // namespace mps
