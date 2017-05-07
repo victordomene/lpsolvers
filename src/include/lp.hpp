@@ -38,6 +38,7 @@ namespace lp {
  */
 typedef flens::GeMatrix<flens::FullStorage<double, flens::ColMajor> > Matrix;
 typedef flens::DenseVector<flens::Array<double> > Vector;
+typedef flens::DenseVector<flens::Array<int> > VectorInt;
 typedef flens::Underscore<Matrix::IndexType> Underscore;
 
 class UnboundedLinearProgram : public std::runtime_error {

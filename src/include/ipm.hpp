@@ -37,16 +37,17 @@ namespace ipm {
 
 class IPMSolver : public Solver {
    public:
-    Vector _x;
+    double _lambda;
+    Matrix _x;
+    Matrix _b;
+    Matrix _c;
+    Vector a;
 
     /* Matrix of constraints */
     Matrix _A;
 
-    /* Matrix of slacks */
-    Matrix _S;
-
-    IPM(Matrix& A, Vector& b, Vector& c);
-    ~IPM() override;
+    IPMSolver(Matrix& A, Vector& b, Vector& c);
+    ~IPMSolver() override;
 
     /*
      * Solves a linear program specified by the tableau, using the simplex
@@ -55,6 +56,25 @@ class IPMSolver : public Solver {
     Vector& Solve() override;
 
    private:
+    /*
+     * Returns true when at an optimal.
+     */
+    bool Done();
+
+    /*
+     * Finds an initial solution to the given LP.
+     */
+    void FindInitialSolution();
+
+    /*
+     * Performs a Netwon optimization step.
+     */
+    void NewtonOptimization();
+
+    /*
+     * Updates _lambda appropriately.
+     */
+    void UpdateLambda();
 };
 
 }  // namespace ipm

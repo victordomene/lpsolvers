@@ -34,7 +34,7 @@
 namespace utils {
 
 bool within(double a, double b) {
-    return std::abs(a - b) < precision_;
+    return std::abs(a - b) < _precision;
 }
 
 }  // namespace utils
