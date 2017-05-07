@@ -97,14 +97,12 @@ std::pair<Vector::IndexType, Vector::IndexType> SimplexSolver::FindPivot() {
      */
     min = std::numeric_limits<double>::max();
     for (int i = _tableau.firstRow() + 1; i <= _tableau.lastRow(); ++i) {
-        std::cout << "LALALLA" << i << "; " << _tableau.lastCol() << "; " << std::endl;
         double denom = _tableau(i, pivot_col);
         if (denom == 0.0) {
             continue;
         }
 
         double current = _tableau(i, _tableau.lastCol()) / denom;
-        std::cout << i << "; " << _tableau.lastCol() << "; " << current << std::endl;
         if (current >= 0.0 && min > current) {
             min = current;
             pivot_row = i;
@@ -112,13 +110,13 @@ std::pair<Vector::IndexType, Vector::IndexType> SimplexSolver::FindPivot() {
     }
 
     if (pivot_row < 0) {
-        std::cout << _tableau << std::endl;
+        //std::cout << _tableau << std::endl;
         throw UnboundedLinearProgram();
     }
 
-    std::cout << _tableau << std::endl;
-    std::cout << "Pivot row, col: " << pivot_row << ", " << pivot_col
-              << std::endl;
+    //std::cout << _tableau << std::endl;
+    //std::cout << "Pivot row, col: " << pivot_row << ", " << pivot_col
+              //<< std::endl;
     return std::pair<int, int>(pivot_row, pivot_col);
 }
 
@@ -161,7 +159,7 @@ int SimplexSolver::IsBasicCol(int col) {
         if (utils::within(current, 1.0)) {
             num_ones++;
             one_pos = i;
-        } else if (utils::within(current, 0.0)) {
+        } else if (!utils::within(current, 0.0)) {
             return -1;
         }
     }
@@ -220,13 +218,13 @@ void SimplexSolver::BuildTableau(const Matrix& A, const Vector& b,
         _tableau(i + 1, A.lastCol() + i + 1) = -1;
     }
 
-    /* add in the entries in b to the tableau */
+    /* Add in the entries in b to the tableau */
     for (Vector::IndexType i = b.firstIndex(); i <= b.lastIndex(); ++i) {
         _tableau(i + 1, _tableau.lastCol()) = b(i);
     }
 
 #ifdef DEBUG
-    std::cout << _tableau;
+    //std::cout << _tableau;
 #endif
 }
 

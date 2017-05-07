@@ -42,9 +42,9 @@ LinearProgram::LinearProgram(std::string mpsfile) {
     _b = parser.GetB();
     _c = parser.GetC();
 
-    std::cout << _A << std::endl << std::endl;
-    std::cout << _b << std::endl << std::endl;
-    std::cout << _c << std::endl << std::endl;
+    //std::cout << _A << std::endl << std::endl;
+    //std::cout << _b << std::endl << std::endl;
+    //std::cout << _c << std::endl << std::endl;
 }
 
 Vector LinearProgram::SimplexSolve() {
