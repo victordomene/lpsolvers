@@ -54,6 +54,16 @@ and `slide.mps` will work, though. There are also some imprecisions in computati
 and that is likely due to FLENS problems. (In the end, I think I should not have
 used FLENS and just stuck with Numpy or something simpler, but oh well...)
 
+## Installing FLENS
+
+All you have to do to install FLENS is to do
+
+``
+git clone git://github.com/michael-lehn/FLENS.git
+``
+
+**inside the `src` folder**.
+
 ## Benchmarks
 
 The benchmarks present in the paper were performed using GLPK and lpsolve.
