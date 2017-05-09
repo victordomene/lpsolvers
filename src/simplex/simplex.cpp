@@ -38,7 +38,7 @@ namespace solver {
 namespace simplex {
 
 SimplexSolver::SimplexSolver(Matrix& A, Vector& b, Vector& c,
-                             PivottingRules rule)
+                             PivotingRules rule)
     : _x(c.length()),
       _tableau(A.numRows() + 1, A.numCols() + A.numRows() + 2),
       _rule(rule) {
@@ -54,7 +54,7 @@ std::pair<Vector::IndexType, Vector::IndexType> SimplexSolver::FindPivot() {
     double min = std::numeric_limits<double>::max();
 
     switch (_rule) {
-        case PivottingRules::BLAND: {
+        case PivotingRules::DANTZIG: {
             for (int i = _tableau.firstCol() + 1; i <= _tableau.lastCol() - 1;
                  ++i) {
                 double current = _tableau(_tableau.firstRow(), i);
@@ -65,15 +65,19 @@ std::pair<Vector::IndexType, Vector::IndexType> SimplexSolver::FindPivot() {
             }
             break;
         }
-        case PivottingRules::RANDOM: {
+        case PivotingRules::RANDOM: {
             std::random_device rng;
             std::uniform_int_distribution<std::random_device::result_type> dist(
                 _tableau.firstRow() + 1, _tableau.lastRow());
 
-            pivot_col = dist(rng);
+            int i = dist(rng);
+            while (_tableau(_tableau.firstRow(), i) >= 0.0) {
+                i = dist(rng);
+            }
+            pivot_col = i;
             break;
         }
-        case PivottingRules::FIRST: {
+        case PivotingRules::BLAND: {
             for (int i = _tableau.firstCol() + 1; i <= _tableau.lastCol() - 1;
                  ++i) {
                 double current = _tableau(_tableau.firstRow(), i);
@@ -85,38 +89,55 @@ std::pair<Vector::IndexType, Vector::IndexType> SimplexSolver::FindPivot() {
             }
             break;
         }
-        case PivottingRules::DEVEX: {
-            pivot_col = _tableau.firstRow() + 1;
-            break;
-        }
     }
+    assert(_tableau(_tableau.firstRow(), pivot_col) < 0);
     assert(pivot_col >= 0);
 
-    /*
-     * Implements different pivotting rules.
-     */
     min = std::numeric_limits<double>::max();
+    int fallback = -1;
     for (int i = _tableau.firstRow() + 1; i <= _tableau.lastRow(); ++i) {
         double denom = _tableau(i, pivot_col);
-        if (denom == 0.0) {
+        double num = _tableau(i, _tableau.lastCol());
+#ifdef DEBUG
+        std::cerr << "[DEBUG] (row, num, denom): (" << i << ", " << num << ", "
+                  << denom << ")" << std::endl;
+#endif
+
+        /*
+         * Only compute ratios if the denom is actually positive.
+         */
+        if (fallback == -1 && num == 0.0 && denom != 0.0) {
+            fallback = i;
+        }
+        if (denom <= 0.0) {
             continue;
         }
 
-        double current = _tableau(i, _tableau.lastCol()) / denom;
-        if (current >= 0.0 && min > current) {
-            min = current;
+        double ratio = num / denom;
+        if (ratio > 0.0 && ratio < min) {
+            min = ratio;
             pivot_row = i;
         }
     }
+    if (pivot_row < 0) {
+        pivot_row = fallback;
+    }
 
     if (pivot_row < 0) {
-        //std::cout << _tableau << std::endl;
+#ifdef DEBUG
+        std::cerr << "[DEBUG] Could not find a 'good' pivoting row. "
+                     "Program is unbounded."
+                  << std::endl;
+        std::cerr << _tableau << std::endl;
+#endif
         throw UnboundedLinearProgram();
     }
 
-    //std::cout << _tableau << std::endl;
-    //std::cout << "Pivot row, col: " << pivot_row << ", " << pivot_col
-              //<< std::endl;
+#ifdef DEBUG
+    std::cerr << _tableau << std::endl;
+    std::cerr << "[DEBUG] Pivot (row, col): (" << pivot_row << ", " << pivot_col
+              << ")" << std::endl;
+#endif
     return std::pair<int, int>(pivot_row, pivot_col);
 }
 
@@ -133,8 +154,6 @@ void SimplexSolver::PivotAbout(const std::pair<int, int>& pivot) {
         Matrix::View current = _tableau(_(i, i), _);
         current = current - pivot_row * _tableau(i, pivot.second);
     }
-
-    //std::cout << _tableau;
 }
 
 bool SimplexSolver::Done() {
@@ -143,7 +162,10 @@ bool SimplexSolver::Done() {
             return false;
         }
     }
-    std::cout << _tableau << std::endl;
+#ifdef DEBUG
+    std::cerr << "[DEBUG] Final tableau:" << std::endl;
+    std::cerr << _tableau << std::endl;
+#endif
     return true;
 }
 
@@ -183,10 +205,9 @@ Vector& SimplexSolver::Solve() {
         int basic_row = IsBasicCol(i);
         if (basic_row != -1) {
             _x(index) = _tableau(basic_row, _tableau.lastCol());
-            ++index;
         }
+        ++index;
     }
-    //std::cout << _tableau(_tableau.firstRow(), _tableau.lastCol()) << std::endl;
     return _x;
 }
 
@@ -203,10 +224,24 @@ void SimplexSolver::BuildTableau(const Matrix& A, const Vector& b,
         _tableau(_tableau.firstRow(), i + 1) = -1 * c(i);
     }
 
+    /* Add in the entries in b to the tableau */
+    for (Vector::IndexType i = b.firstIndex(); i <= b.lastIndex(); ++i) {
+        _tableau(i + 1, _tableau.lastCol()) = b(i);
+    }
+
     /* Add in the entries in A to the tableau; they start a column after */
     for (Vector::IndexType i = A.firstRow(); i <= A.lastRow(); ++i) {
+        bool must_negate = b(i) < 0.0;
+        if (must_negate) {
+            _tableau(i + 1, _tableau.lastCol()) = -1.0 * b(i);
+        }
+
         for (Vector::IndexType j = A.firstCol(); j <= A.lastCol(); ++j) {
-            _tableau(i + 1, j + 1) = A(i, j);
+            if (must_negate) {
+                _tableau(i + 1, j + 1) = -1 * A(i, j);
+            } else {
+                _tableau(i + 1, j + 1) = A(i, j);
+            }
         }
 
         /*
@@ -215,16 +250,15 @@ void SimplexSolver::BuildTableau(const Matrix& A, const Vector& b,
          * that particular constraint. So, since all equations were converted
          * in the MPS to Ax >= b, the slacks have -1 coefficients.
          */
-        _tableau(i + 1, A.lastCol() + i + 1) = -1;
-    }
-
-    /* Add in the entries in b to the tableau */
-    for (Vector::IndexType i = b.firstIndex(); i <= b.lastIndex(); ++i) {
-        _tableau(i + 1, _tableau.lastCol()) = b(i);
+        if (must_negate) {
+            _tableau(i + 1, A.lastCol() + i + 1) = 1;
+        } else {
+            _tableau(i + 1, A.lastCol() + i + 1) = -1;
+        }
     }
 
 #ifdef DEBUG
-    //std::cout << _tableau;
+    std::cerr << "[DEBUG] Initialized tableau." << std::endl;
 #endif
 }
 

@@ -30,7 +30,7 @@
 
 namespace utils {
 
-const double _precision = 0.1;
+const double _precision = 0.00001;
 bool within(double a, double b);
 
 }  // namespace utils

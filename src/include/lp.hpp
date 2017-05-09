@@ -46,6 +46,12 @@ class UnboundedLinearProgram : public std::runtime_error {
     UnboundedLinearProgram() : std::runtime_error("Unbounded Linear Program") {}
 };
 
+namespace solver {
+namespace simplex {
+enum class PivotingRules;
+}
+}
+
 /*
  * Encodes a Linear Program in the form:
  *
@@ -68,7 +74,7 @@ class LinearProgram {
     /*
      * Creates a SimplexSolver and runs it.
      */
-    Vector SimplexSolve();
+    Vector SimplexSolve(solver::simplex::PivotingRules rule);
 
     /*
      * Creates an IPMSolver and runs it.

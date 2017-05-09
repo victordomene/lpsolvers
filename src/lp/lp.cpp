@@ -41,23 +41,21 @@ LinearProgram::LinearProgram(std::string mpsfile) {
     _A = parser.GetA();
     _b = parser.GetB();
     _c = parser.GetC();
-
-    //std::cout << _A << std::endl << std::endl;
-    //std::cout << _b << std::endl << std::endl;
-    //std::cout << _c << std::endl << std::endl;
 }
 
-Vector LinearProgram::SimplexSolve() {
-    solver::simplex::SimplexSolver solver(_A, _b, _c, solver::simplex::PivottingRules::BLAND);
+Vector LinearProgram::SimplexSolve(solver::simplex::PivotingRules rule) {
+    solver::simplex::SimplexSolver solver(_A, _b, _c, rule);
     return solver.Solve();
 }
 
 Vector LinearProgram::IPMSolve() {
+    /* Stub code. */
     Vector a(1);
     return a;
 }
 
 Vector LinearProgram::EllipsoidSolve() {
+    /* Stub code. */
     Vector a(1);
     return a;
 }

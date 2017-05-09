@@ -35,16 +35,16 @@ namespace lp {
 namespace solver {
 namespace simplex {
 
-enum class PivottingRules { DEVEX, FIRST, RANDOM, BLAND };
+enum class PivotingRules { BLAND, RANDOM, DANTZIG };
 
 class SimplexSolver : public Solver {
    public:
     Vector _x;
     Matrix _tableau;
-    PivottingRules _rule;
+    PivotingRules _rule;
 
     SimplexSolver(Matrix& A, Vector& b, Vector& c,
-                  PivottingRules rule = PivottingRules::BLAND);
+                  PivotingRules rule = PivotingRules::BLAND);
     ~SimplexSolver() override;
 
     /*
@@ -78,7 +78,7 @@ class SimplexSolver : public Solver {
 
     /*
      * Finds a pivot element. Currently uses Bland's Rule. Must allow new types
-     * of pivotting rules.
+     * of Pivoting rules.
      */
     std::pair<Vector::IndexType, Vector::IndexType> FindPivot();
 };
